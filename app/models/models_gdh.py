@@ -92,19 +92,39 @@ class EqCompressorType(Base):
                                 lazy="selectin"
                                 )
 
-class UOM(Base):
-    __tablename__ = 'UOM'
+
+class Dimension(Base):
+    __tablename__ = 'DIMENSION'
     __table_args__ = {'comment':'Таблица размерностей'}
 
+    id = Column(Integer, primary_key=True)
+    name = Column(String)      
+    dimen = Column(String)    
+
+    uom = relationship('UOM',
+                         back_populates='dimen'
+                         ) 
+    
+class UOM(Base):
+    __tablename__ = 'UOM'
+    __table_args__ = {'comment':'Таблица кодов размерностей и единицами измерения'}
 
     id = Column(Integer, primary_key=True)
-    uom_code = Column(String, comment='Код размерности')      
+    uom_code = Column(String, comment='Код размерности')  
+    name = Column(String)    
+    short_name = Column(String)  
 
+    dimen_id = Column(Integer, ForeignKey('DIMENSION.id'))
+
+    dimen = relationship('Dimension',
+                                back_populates='uom',
+                                uselist=True
+                                )
     
+
 class EqCompressorPerfomanceCurve(Base):
     __tablename__ = 'EQ_COMPRESSOR_PERFORMANCE_CURVE'
     __table_args__ = {'comment':'Таблица безразмерных параметров'}
-
 
     id = Column(Integer, primary_key=True)
     head = Column(Float, comment='Коэффициент напора')
@@ -118,7 +138,6 @@ class EqCompressorPerfomanceCurve(Base):
                          uselist=True
                          )
   
-
 
 class Company(Base):
     __tablename__ = 'COMPANY'

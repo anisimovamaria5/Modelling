@@ -2,7 +2,7 @@ from app.schemas.schemas import SubMenu
 
       
 async def _build_tree(repo):
-    companies = await repo.get_read_data()
+    companies = await repo.get_data()
     menu = []
     for company in companies: 
         company_node = SubMenu(

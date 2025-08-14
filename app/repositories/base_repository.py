@@ -1,5 +1,3 @@
-from sqlite3 import IntegrityError
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.models_gdh import *
@@ -14,6 +12,13 @@ class BaseRepository(Generic[T]):
         self.model = model
 
 
+    async def create_data(self, **values):
+        new_instance = self.model(**values)
+        self.session.add(new_instance)
+        await self.session.commit()
+        return new_instance.id
+    
+
     async def create_if_not_exist(self, **values):
         existing_id = (await self.session.execute(select(self.model.id).filter_by(**values))).scalar()
 
@@ -26,15 +31,16 @@ class BaseRepository(Generic[T]):
         return new_instance.id
         
 
-    async def get_read_data(self) -> List[T]:
+    async def get_data(self) -> List[T]:
         result = await self.session.execute(select(self.model))
         return result.scalars().all()  
         
 
-    async def get_read_data_by_code(self, filter_value: str) -> list[T]:
+    async def get_data_by_code(self, filter_value: str) -> list[T]:
+        print(self.model)
         result = await self.session.execute(
             select(self.model)
-            .where(self.model.code.contains(filter_value)))
+            .where(self.model.code.startswith(filter_value)))
         return result.scalars().all()  
 
 

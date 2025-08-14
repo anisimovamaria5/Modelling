@@ -3,7 +3,6 @@ import logging
 from fastapi import HTTPException
 from typing import Any, Callable
 
-from fastapi.responses import JSONResponse
 
 
 def handle_errors(func: Callable) -> Callable:

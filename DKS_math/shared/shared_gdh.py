@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 from DKS_math.dimKoef import DimKoef
-from app.schemas.schemas import BuildGdh, CurveResponse, Dataset, DataPoint
 from scipy.optimize import minimize_scalar
 
 def get_df_by_excel(excel_data, 
@@ -45,34 +44,44 @@ y_col_1 = {
             'kpd', 'k_nap'
             }
 
-def use_pydantic_model(dct_df):
+def get_param(dct_df):
     curves = []
     for key, df in dct_df.items():
         datasets = []
         for kind in kinds:
             if kind == 'points':
                 grouped_dfs = [group for _, group in df.groupby('freq')]
-                for gr_df in grouped_dfs:
-                    for label in labels:
-                        for y in y_col_1:
-                            dataset = Dataset(label=label, 
-                                            title=f"freq={gr_df['freq'].iloc[0]:.0f}",
-                                            kind=kind,
-                                            data=[DataPoint(x=row['k_rash'], 
-                                                            y=row[y]) 
-                                                        for _, row in gr_df.iterrows()])                        
-                            datasets.append(dataset)
+                for gr_df in grouped_dfs:            
+                    for label, y in zip(labels, y_col_1):
+                        dataset = {
+                            'label': label, 
+                            'title': f"freq={gr_df['freq'].iloc[0]:.0f}",
+                            'kind': kind,
+                            'data': [{
+                                    'x': row['k_rash'], 
+                                    'y': row[y]
+                                    }
+                                for _, row in gr_df.iterrows()]
+                            }                  
+                        datasets.append(dataset)
             else:
                 for label in labels:
                     for y in y_col_2[label]:
-                        dataset = Dataset(label=label, 
-                                        title=f"deg={df['deg'][0]}",
-                                        kind=kind,
-                                        data=[DataPoint(x=row['k_rash_lin'], 
-                                                        y=row[y]) 
-                                                    for _, row in df.iterrows()])                        
-                        datasets.append(dataset)                
-        curve = CurveResponse(datasets=datasets, label=df['name'][0])
+                        dataset = {
+                            'label': label, 
+                            'title': f"deg={df['deg'][0]}",
+                            'kind': kind,
+                            'data': [{
+                                    'x': row['k_rash_lin'], 
+                                    'y': row[y]
+                                    }
+                                for _, row in df.iterrows()]
+                            }                   
+                        datasets.append(dataset) 
+        curve = {
+            'datasets': datasets,
+            'label': df['name'][0]
+        }           
         curves.append(curve)
     return curves
 
@@ -80,10 +89,8 @@ def use_pydantic_model(dct_df):
 
 class BaseGDH:
     
-    p_komer = 0.101325
-    t_komer = 283
 
-    def __init__(self, p_in, diam, freq_nom, t_in, r_value, kpd, koef_rash, koef_nap, name, k_value = 1.31): 
+    def __init__(self, p_in, diam, freq_nom, t_in, r_value, kpd, koef_rash, koef_nap, name, p_out_nom, comp_nom, power_nom, k_value = 1.31): 
         self.p_in = p_in
         self.diam = diam
         self.freq_nom = freq_nom
@@ -94,7 +101,10 @@ class BaseGDH:
         self.kpd = kpd 
         self.koef_rash = koef_rash
         self.koef_nap = koef_nap
-        self.f_kpd:np.poly1d=None  
+        self.p_out_nom = p_out_nom
+        self.comp_nom = comp_nom
+        self.power_nom = power_nom
+        self.f_kpd:np.poly1d = None  
 
 
     @classmethod
@@ -104,7 +114,10 @@ class BaseGDH:
         freq_nom = param.eq_compressor_type.eq_compressor_type_freq_nominal.value
         t_in = param.t_in
         diam = param.diam
-        p_in = 3
+        p_out_nom = param.eq_compressor_type.eq_compressor_type_pressure_out.value
+        comp_nom = param.eq_compressor_type.eq_compressor_type_comp_ratio.value
+        power_nom = param.eq_compressor_type.eq_compressor_type_power.value
+        p_in = (p_out_nom * 0.0980665) / comp_nom
         lst_koef_rash = []
         lst_koef_nap = []
         lst_kpd = []
@@ -116,8 +129,8 @@ class BaseGDH:
             lst_koef_nap.append(koef_nap)
             lst_kpd.append(kpd)
         name = param.name
-        return cls(p_in, diam, freq_nom, t_in, r_value, lst_kpd, lst_koef_rash, lst_koef_nap, name, k_value)
-    
+        return cls(p_in, diam, freq_nom, t_in, r_value, lst_kpd, lst_koef_rash, lst_koef_nap, name, p_out_nom, comp_nom, power_nom, k_value)
+
 
     @classmethod
     def get_z_val(cls, p_in:float, t_in:float, t_krit=190, p_krit=4.6) -> float: 
@@ -200,7 +213,7 @@ class BaseGDH:
         return k_koef_rash_range
     
 
-    def get_summry(self):
+    def get_param(self):
         c00_kpd = np.polyfit(x=self.koef_rash, y=self.kpd, deg=4)     
         self.f_kpd = np.poly1d(c00_kpd)
         c00_nap = np.polyfit(x=self.koef_rash, y=self.koef_nap, deg=4)
@@ -229,49 +242,61 @@ class BaseGDH:
         grouped_dfs = [group.reset_index(drop=True) for _, group in res.groupby('freq_nom_all')]
 
         lst_df_2 = []
-        lst_buil_gdh_freq = []
+        data_freq = []
         for df in grouped_dfs:
+
             df_freq = df[['volume_rate', 'comp']].T
             df_freq = pd.DataFrame({**{str(i): df_freq[0].str[i] 
                                 for i in range(len(df_freq.loc['comp'][0]))}})
             df_kpd_1 = df_freq.T.stack()
             lst_df_2.append(df_kpd_1)
+
             datasets_freq = []
             for volume_rate, comp in zip(df_freq.loc['volume_rate'], df_freq.loc['comp']):
-                dataset_freq = DataPoint(
-                            x=volume_rate, 
-                            y=comp
-                            ) 
+                dataset_freq = {
+                        'x': volume_rate, 
+                        'y': comp
+                    }
                 datasets_freq.append(dataset_freq)
 
-            buil_gdh_freq = BuildGdh(
-                label=f"{df['freq_nom_all'][0]}",
-                datasets=datasets_freq
-                    )
-            lst_buil_gdh_freq.append(buil_gdh_freq)
+            data_freq_ = {
+                'label': f"{df['freq_nom_all'][0]}",
+                'data': datasets_freq,
+                'kind': 'freq',                 
+                }
+            data_freq.append(data_freq_)
 
-            lst_buil_gdh_kpd = []
-            df_kpd_2 = pd.concat(lst_df_2, axis=1) 
-            for i, label in zip(range(len(df_kpd_2) // 2), kpd_):
-                volume_rate_row = df_kpd_2.iloc[2*i]
-                comp_row = df_kpd_2.iloc[2*i+1]
+        data_kpd = []
+        df_kpd_2 = pd.concat(lst_df_2, axis=1) 
 
-                datasets_kpd = []
-                for col in df_kpd_2.columns:
-                    volume_rate = volume_rate_row[col]
-                    comp = comp_row[col]
-                    dataset_kpd = DataPoint(
-                            x=volume_rate, 
-                            y=comp)            
-                    datasets_kpd.append(dataset_kpd)
-                
-                buil_gdh_kpd = BuildGdh(
-                    label=f"{label:.2f}",
-                    datasets=datasets_kpd
-                    )
-                lst_buil_gdh_kpd.append(buil_gdh_kpd)
+        df_kpd_2 = df_kpd_2.iloc[:, ::-1]
+        for i, label in zip(range(len(df_kpd_2) // 2), kpd_):
+            
+            volume_rate_row = df_kpd_2.iloc[2*i]
+            comp_row = df_kpd_2.iloc[2*i+1]
 
-        return lst_buil_gdh_freq, lst_buil_gdh_kpd
+            datasets_kpd = []
+            for col in df_kpd_2.columns:
+                volume_rate = volume_rate_row[col]
+                comp = comp_row[col]
+                dataset_kpd = {
+                        'x': volume_rate, 
+                        'y': comp                    
+                    }           
+                datasets_kpd.append(dataset_kpd)
+
+            data_kpd_ = {
+                    'label': f"{label:.2f}",
+                    'kind': 'kpd', 
+                    'data': datasets_kpd
+                }
+            data_kpd.append(data_kpd_)
+        buil_gdh = {
+            'datasets': data_freq+data_kpd,
+            'SPCHName': self.name,
+            'paramline': f"Z = {z_in:.2f}, R = {self.r_value:.1f}, T = {self.t_in:.0f} К, fnom = {self.freq_nom:.0f} об/мин"              
+        }
+        return buil_gdh
  
 
     @classmethod

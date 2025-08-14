@@ -12,9 +12,13 @@ app = FastAPI()
 
 app.include_router(router)
 
+ORIGINS = [
+    "http://10.7.114.224:4001"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,11 +1,10 @@
-"""Модуль компоновки ГДХ
-"""
+"""Модуль компоновки ГДХ"""
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Tuple
-from .baseFormulas import BaseFormulas
-from .gdhInstance import GdhInstance
-from .mode import Mode
+from DKS_math.baseFormulas import BaseFormulas
+from DKS_math.gdhInstance import GdhInstance
+from DKS_math.mode import Mode
 
 class ConfGDH(BaseFormulas):
 
@@ -14,8 +13,7 @@ class ConfGDH(BaseFormulas):
         self.avo_dp = avo_dp
         self.t_in = t_in
         self.avo_t_in = avo_t_in
-
-
+        
     def get_freq_bound_all(self, mode:Mode, t_in=None, r_value=None, k_value=None):
         curr_mode = mode.clone()
         curr_mode.t_in = curr_mode.t_in if t_in is None else t_in
@@ -25,7 +23,7 @@ class ConfGDH(BaseFormulas):
         res = []
 
         for ind, (stage, cnt_gpa) in enumerate(self.stage_list):
-            curr_mode.q_rate = mode.q_rate / cnt_gpa
+            curr_mode.q_rate = mode.q_rate[ind] / cnt_gpa
             volume_rate_arr = curr_mode.get_volume_rate
 
             if ind == 0:
@@ -33,28 +31,23 @@ class ConfGDH(BaseFormulas):
             else:
                 freq_bound_arr:np.ndarray = self.stage_list[ind][0].get_freq_bound(volume_rate_arr.reshape((*volume_rate_arr.shape, 1))).T 
             
-            comp_arr = stage.get_summry(curr_mode, freq_bound_arr)['comp']
+            comp_arr = stage.get_summry_stage(curr_mode, freq_bound_arr)['comp']
             curr_mode.p_in = comp_arr * curr_mode.p_in - self.avo_dp
             res.append(freq_bound_arr)
         return res
     
-
-    def get_summry_without_bound(self, mode:Mode, freq:list, t_in=None)-> pd.DataFrame:
+    def get_summry_without_bound(self, mode:Mode, freq:list, t_in=None):
         res = []
         curr_mode = mode.clone()
         curr_mode.t_in =  curr_mode.t_in  if t_in is None else t_in
-
         for ind, ((stage, cnt_gpa), freq) in enumerate(zip(self.stage_list, freq)):
-            curr_mode.q_rate = mode.q_rate / cnt_gpa
-            temp_res = stage.get_summry(curr_mode, freq)
+            curr_mode.q_rate = mode.q_rate[ind] / cnt_gpa
+            temp_res = stage.get_summry_stage(curr_mode, freq)
+            temp_res['work_gpa'] = self.stage_list[ind][1]
+            res.append(temp_res)
             curr_mode.p_in = temp_res['comp'] * curr_mode.p_in - self.avo_dp
-            
-            temp_res = pd.concat([
-                temp_res,
-                pd.Series({'work_gpa':self.stage_list[ind][1]})
-            ])
-            res.append(temp_res)     
-        return pd.concat(res, axis=1).T
+        return res
+
     
 
     def get_summry_with_bound(self, mode:Mode, freq:np.ndarray, bound_dict:Dict[str,Tuple[np.ndarray,np.ndarray]]):
@@ -104,7 +97,7 @@ class ConfGDH(BaseFormulas):
         curr_mode.q_rate = mode.q_rate / self.stage_list[0][1]
 
         curr_mode.p_in = np.array([
-            self.stage_list[0][0].get_summry(curr_mode, freq)['p_out'] - self.avo_dp
+            self.stage_list[0][0].get_summry_stage(curr_mode, freq)['p_out_diff'] - self.avo_dp
         for freq in np.linspace(freq_bounds[0][0], freq_bounds[0][1], 50)]) 
 
         curr_mode.q_rate = mode.q_rate / self.stage_list[1][1]
@@ -120,28 +113,28 @@ class ConfGDH(BaseFormulas):
         ])
     
 
-bound_dict = {
-    'power':(
-        np.array([10000,16000]),
-        np.array([2000,7000]),
-        200),
-    'comp':(
-        np.array([2.5,2.5]),
-        np.array([1,1]),
-        0.01),
-    'udal':(
-        np.array([100,100]),
-        np.array([0,0]),
-        1.0),    
-    'freq_dimm':(
-        np.array([1.05,1.05]),    
-        np.array([0.7,0.7]),
-        0.01),
-    'p_out':(
-        np.array([2.5,7.6]),    
-        np.array([1.5,3.0]),
-        0.1),    
-}
+# bound_dict = {
+#     'power':(
+#         np.array([10000,16000]),
+#         np.array([2000,7000]),
+#         200),
+#     'comp':(
+#         np.array([2.5,2.5]),
+#         np.array([1,1]),
+#         0.01),
+#     'udal':(
+#         np.array([100,100]),
+#         np.array([0,0]),
+#         1.0),    
+#     'freq_dimm':(
+#         np.array([1.05,1.05]),    
+#         np.array([0.7,0.7]),
+#         0.01),
+#     'p_out':(
+#         np.array([2.5,7.6]),    
+#         np.array([1.5,3.0]),
+#         0.1),    
+# }
 
 if __name__ == '__main__':
     conf_obj = ConfGDH([
