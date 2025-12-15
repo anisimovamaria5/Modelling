@@ -10,10 +10,8 @@ import copy
 import time
 from datetime import datetime as dt
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-# from logger.wrapper import get_call_stats
 from app_name.DKS_math.solver.solver_p_in import PressInSolver
 from app_name.DKS_math.solver.solver_p_out import *
-# from logger.logger import logging_context
 
 class ConfGDHSolver(ConfGDH):
     def __init__(self, comp_list:List[List[Tuple[GdhInstance, int]]], 
@@ -122,29 +120,6 @@ class ConfGDHSolver(ConfGDH):
 def calc_modes_parall(conf_solv_obj: ConfGDHSolver, modes: List[Mode]):
     results = conf_solv_obj.get_all_comp(modes)
     return results
-
-
-if __name__ == '__main__':
-    conf_solv_obj = ConfGDHSolver([
-            (GdhInstance.create_by_csv('./DKS_math/Test/spch_dimkoef/ГПА-ц3-16С-45-1.7(ККМ).csv'), 4),
-            (GdhInstance.create_by_csv('./DKS_math/Test/spch_dimkoef/CGX-425-16-65-1.7СМП(ПСИ).csv'), 4),
-            ],
-            bound_dict
-            )
-    
-    df_date = pd.read_excel("media/Показатели для ДКС.xlsx", sheet_name='Лист2')
-    df_data_mode = df_date.loc[:23, ('Расход, млн', 'Pвх, бар', 'Pвых,бар')]
-    q_rates = df_data_mode['Расход, млн']
-    p_ins = df_data_mode['Pвх, бар']
-    p_outs = df_data_mode['Pвых,бар']
-
-    print(time.strftime('%X'))
-    beg = dt.now()
-    modes = [Mode([q_rate, q_rate], p_in, 288, 512, 1.31, p_out, 0.101325, 283) 
-             for q_rate, p_in, p_out in zip(q_rates, p_ins, p_outs)]
-    results = asyncio.run(calc_modes_parall(conf_solv_obj, modes))
-    print(results)
-    print(dt.now() - beg)
 
 
 
