@@ -1,0 +1,16 @@
+[project]
+name = "cli"
+version = "1.0.0"
+description = "CLI для управления расчетами ДКС"
+
+
+[project.scripts]
+cli = "app_name.UI.cli.main:app"
+
+
+[database]
+url = "sqlite+aiosqlite:///test_dks.db"
+
+
+[tool.setuptools]
+packages = ["app_name"] 

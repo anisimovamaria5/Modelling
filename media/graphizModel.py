@@ -1,6 +1,6 @@
 from sqlalchemy_schemadisplay import create_schema_graph
 from sqlalchemy.engine import create_engine
-from app.database import Base 
+from app_name.infrastructure.repositories.compressor.database import Base 
 import os
 from sqlalchemy import inspect
 

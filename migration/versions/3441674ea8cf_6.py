@@ -1,22 +1,15 @@
-"""new_data
-
-Revision ID: 3441674ea8cf
-Revises: b6d071ace483
-Create Date: 2025-06-26 09:34:32.452252
-
-"""
 from typing import Sequence, Union
 
 from alembic import op
 import pandas as pd
 import sqlalchemy as sa
 
-from app.models.models_gdh import UOM, Dimension
+from app_name.models.models_gdh import UOM, Dimension
 
 
 # revision identifiers, used by Alembic.
 revision: str = '3441674ea8cf'
-down_revision: Union[str, None] = 'b6d071ace483'
+down_revision: Union[str, None] = '890d03491bc3'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

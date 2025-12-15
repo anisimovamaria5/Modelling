@@ -1,22 +1,15 @@
-"""add_initial_data
-
-Revision ID: 890d03491bc3
-Revises: 76a92f19e748
-Create Date: 2025-05-23 10:56:42.892583
-
-"""
 from typing import Sequence, Union
 
 from alembic import op
 import pandas as pd
 import sqlalchemy as sa
 
-from app.models.models_gdh import Company, Dks, EqCompressorUnit, Field
+from app_name.models.models_gdh import Company, Dks, EqCompressorUnit, Field
 
 
 # revision identifiers, used by Alembic.
 revision: str = '890d03491bc3'
-down_revision: Union[str, None] = '76a92f19e748'
+down_revision: Union[str, None] = '2c39fcfad6d8'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
