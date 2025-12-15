@@ -6,7 +6,6 @@ from app_name.DKS_math.confGDH import *
 import warnings
 from autograd import value_and_grad
 import autograd.numpy as anp
-# from logger.wrapper import LoggerClass
 warnings.filterwarnings("ignore")
 
 
@@ -106,16 +105,6 @@ class Solver:
                                 lb=bounds_array_staged[num_stage][:, 1].tolist(), 
                                 ub=bounds_array_staged[num_stage][:, 0].tolist()
                                 )
-        # keys = self.bound_dict.keys()
-        # values = self.bound_dict.values()
-        # fun = lambda x: [self.conf.get_summry_without_bound(mode, x)[num_stage][key] 
-        #                 for key in keys]
-        # bound_arrs = np.array([item[:-1] for item in values])
-        # constr_obj = NonlinearConstraint(
-        #                         fun=fun, 
-        #                         lb=bound_arrs[:, 1, num_stage].tolist(), 
-        #                         ub=bound_arrs[:, 0, num_stage].tolist()
-        #                         )
         return constr_obj
     
 
@@ -143,7 +132,6 @@ class Solver:
                 ]
             ] 
         
-       # x0 = np.array([np.mean(freq_rehsaped[i]) for i in range(num_stages)])  
         x0 = np.array((bounds.lb + bounds.ub) / 2)  
         res = minimize(self.func_z, 
                         x0=x0,
@@ -182,16 +170,3 @@ bound_dict = {
         0.1),
 }
 
-if __name__ == '__main__':
-    conf_obj = ConfGDH([
-            (GdhInstance.create_by_csv('./DKS_math/Test/spch_dimkoef/ГПА-ц3-16С-45-1.7(ККМ).csv'), 1),
-            (GdhInstance.create_by_csv('./DKS_math/Test/spch_dimkoef/CGX-425-16-65-1.7СМП(ПСИ).csv'), 2),
-        ])
-    mode = Mode([34.6247, 34.6247], 3.09655498953779, 288, 512, 1.31, 4.52460708334446, 0.101325, 283)
-    solv = Solver(conf_obj, bound_dict)
-    # solv.get_2stage_targer_surface(mode)
-    # plt.show()
-    # res = solv.grad_target(mode) 
-    res = solv.minimize(mode)
-    print(res)
-    print(conf_obj.get_summry_without_bound(mode, res.x))
