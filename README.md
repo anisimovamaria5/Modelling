@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-orange.svg)](https://www.sqlalchemy.org/)
+[![Typer](https://img.shields.io/badge/Typer-0.9+-brightgreen.svg)](https://typer.tiangolo.com/)
 
 **Проект представляет собой программный комплекс для моделирования и оптимизации работы дожимных компрессорных станций (ДКС).**
 
