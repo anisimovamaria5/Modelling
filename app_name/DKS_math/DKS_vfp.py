@@ -79,23 +79,6 @@ class ConfGDHSolverVfp(ConfGDHSolver):
         return results
 
 
-# def calc_table_vfp_param(conf_solv_obj: ConfGDHSolverVfp, table_params, bound_dict):
-#     table_param = list(product(*table_params.values()))
-#     extra_bounds = bound_dict[0]['extra_bounds']
-#     modes = [Mode(  
-#                 q_rate=param[0],
-#                 p_in=None,
-#                 t_in=extra_bounds['t_in']['value'],
-#                 r_value=extra_bounds['r_value']['value'],
-#                 k_value=extra_bounds['k_value']['value'],
-#                 p_target=param[1],
-#                 press_conditonal=extra_bounds['press_conditonal']['value'],
-#                 temp_conditonal=extra_bounds['temp_conditonal']['value']
-#             ) for param in table_param]
-#     results = conf_solv_obj.get_all_comp(modes)
-#     return results
-
-
 
 def calc_table_vfp_param(conf_solv_obj: ConfGDHSolverVfp, table_params, bound_dict_arr):
     table_param = list(product(*table_params.dict().values()))
